@@ -3,16 +3,12 @@ package com.example.kevin.emergencyproj;
 import android.Manifest;
 import android.content.Context;
 import android.content.pm.PackageManager;
-import android.graphics.Bitmap;
-import android.graphics.BitmapFactory;
-import android.graphics.Canvas;
-import android.graphics.drawable.BitmapDrawable;
-import android.graphics.drawable.Drawable;
-import android.graphics.drawable.VectorDrawable;
 import android.location.Location;
+import android.location.LocationListener;
 import android.location.LocationManager;
 import android.os.Build;
 import android.os.Bundle;
+import android.support.annotation.NonNull;
 import android.support.v4.app.ActivityCompat;
 import android.support.v4.content.ContextCompat;
 import android.support.v7.app.AppCompatActivity;
@@ -56,6 +52,9 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
     List<Point> disasterPoints = new ArrayList<>();
     List<Point> responderPoints = new ArrayList<>();
     Map<Point, Marker> markerTracker = new HashMap<>();
+
+    boolean isZoomedOut;
+    List<Marker> zoomedOutMarkers = new ArrayList<>();
 
     private boolean earthquakeFilter;
     private boolean floodingFilter;
@@ -131,7 +130,8 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
                     runOnUiThread(new Runnable() {
                         @Override
                         public void run() {
-                            redrawMarkers();
+                            initNewDisasterMarkers();
+                            initResponderMarkers();
                         }
                     });
                 }
@@ -192,7 +192,7 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
     }
 
     @Override
-    public void onMapReady(GoogleMap googleMap) {
+    public void onMapReady(final GoogleMap googleMap) {
         this.googleMap = googleMap;
         if (ContextCompat.checkSelfPermission(this,
                 android.Manifest.permission.ACCESS_FINE_LOCATION)
@@ -206,6 +206,24 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
             }
         } else {
             locationManager = (LocationManager) getSystemService(Context.LOCATION_SERVICE);
+            locationManager.requestLocationUpdates(LocationManager.GPS_PROVIDER, 1000, 0, new LocationListener() {
+                @Override
+                public void onLocationChanged(Location location) {
+                    currentLat = location.getLatitude();
+                    currentLong = location.getLongitude();
+                    redrawMarkers();
+                }
+
+                @Override
+                public void onProviderDisabled(String provider) {}
+
+                @Override
+                public void onProviderEnabled(String provider) {}
+
+                @Override
+                public void onStatusChanged(String provider, int status,
+                                            Bundle extras) {}
+            });
             Location location = locationManager.getLastKnownLocation(LocationManager.GPS_PROVIDER);
             LatLng userLoc = new LatLng(location.getLatitude(), location.getLongitude());
 
@@ -214,13 +232,28 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
 
             googleMap.addMarker(new MarkerOptions().position(userLoc).title("Your Marker").icon(BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_BLUE)));
             googleMap.moveCamera(CameraUpdateFactory.newLatLng(userLoc));
-            googleMap.animateCamera(CameraUpdateFactory.zoomTo(15), 1, null);
+            googleMap.moveCamera(CameraUpdateFactory.zoomTo(15));
+            googleMap.setMyLocationEnabled(true);
+            googleMap.setOnCameraMoveListener(new GoogleMap.OnCameraMoveListener() {
+                @Override
+                public void onCameraMove() {
+                    if (isZoomedOut != (googleMap.getCameraPosition().zoom <= 10)) {
+                        isZoomedOut = !isZoomedOut;
+                        zoomedOutMarkers.clear();
+                        for (Point p : markerTracker.keySet()) {
+                            markerTracker.get(p).remove();
+                        }
+                        markerTracker.clear();
+                        initMarkers();
+                    }
+                }
+            });
         }
     }
 
     @Override
     public void onRequestPermissionsResult(int requestCode,
-                                           String permissions[], int[] grantResults) {
+                                           @NonNull String permissions[],@NonNull int[] grantResults) {
         switch (requestCode) {
             case MY_PERMISSIONS_REQUEST_FINE_LOCATION: {
                 if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
@@ -236,28 +269,10 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
 
                     googleMap.addMarker(new MarkerOptions().position(collegeStation).title("Your Marker"));
                     googleMap.moveCamera(CameraUpdateFactory.newLatLng(collegeStation));
+                    googleMap.moveCamera(CameraUpdateFactory.zoomTo(15));
+                    googleMap.setMyLocationEnabled(true);
                 }
             }
-        }
-    }
-
-    private static Bitmap getBitmap(VectorDrawable vectorDrawable) {
-        Bitmap bitmap = Bitmap.createBitmap(vectorDrawable.getIntrinsicWidth(),
-                vectorDrawable.getIntrinsicHeight(), Bitmap.Config.ARGB_8888);
-        Canvas canvas = new Canvas(bitmap);
-        vectorDrawable.setBounds(0, 0, canvas.getWidth(), canvas.getHeight());
-        vectorDrawable.draw(canvas);
-        return bitmap;
-    }
-
-    private static Bitmap getBitmap(Context context, int drawableId) {
-        Drawable drawable = ContextCompat.getDrawable(context, drawableId);
-        if (drawable instanceof BitmapDrawable) {
-            return BitmapFactory.decodeResource(context.getResources(), drawableId);
-        } else if (drawable instanceof VectorDrawable) {
-            return getBitmap((VectorDrawable) drawable);
-        } else {
-            throw new IllegalArgumentException("unsupported drawable type");
         }
     }
 
@@ -324,11 +339,45 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
                 return false;
             }
         });
-        redrawMarkers();
+        initNewDisasterMarkers();
         return false;
     }
 
-    private void redrawMarkers() {
+    private void initMarkers() {
+        if (isZoomedOut && zoomedOutMarkers.isEmpty()) {
+            double avgLat = 0, avgLng = 0;
+            int avgUrgency = 0;
+            for (Point p : disasterPoints) {
+                avgLat += p.getLatitude();
+                avgLng += p.getLongitude();
+                avgUrgency = urgencyLevel(p);
+            }
+            avgLat /= disasterPoints.size();
+            avgLng /= disasterPoints.size();
+            avgUrgency /= disasterPoints.size();
+
+            BitmapDescriptor icon;
+            switch (avgUrgency) {
+                case 0:
+                    icon = BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_RED);
+                    break;
+                case 1:
+                    icon = BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_YELLOW);
+                    break;
+                default:
+                    icon = BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_GREEN);
+            }
+
+            zoomedOutMarkers.add(googleMap.addMarker(new MarkerOptions()
+                    .position(new LatLng(avgLat, avgLng))
+                    .icon(icon)));
+        } else {
+            initResponderMarkers();
+            initNewDisasterMarkers();
+        }
+    }
+
+    private void initResponderMarkers() {
         for (Point p : responderPoints) {
             if (!markerTracker.containsKey(p)) {
                 markerTracker.put(p,
@@ -338,6 +387,9 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
                                 .icon(BitmapDescriptorFactory.fromResource(R.mipmap.responder_icon))));
             }
         }
+    }
+
+    private void initNewDisasterMarkers() {
         for (Point p : disasterPoints) {
             BitmapDescriptor icon;
             String desc;
@@ -397,6 +449,24 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
                 markerTracker.get(p).remove();
                 markerTracker.remove(p);
             }
+        }
+    }
+
+    private void redrawMarkers() {
+        for (Point p : markerTracker.keySet()) {
+            BitmapDescriptor icon;
+            switch (urgencyLevel(p)) {
+                case 0:
+                    icon = BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_RED);
+                    break;
+                case 1:
+                    icon = BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_YELLOW);
+                    break;
+                default:
+                    icon = BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_GREEN);
+                    break;
+            }
+            markerTracker.get(p).setIcon(icon);
         }
     }
 }
