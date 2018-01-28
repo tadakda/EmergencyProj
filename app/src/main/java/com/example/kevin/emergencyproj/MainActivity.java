@@ -7,8 +7,23 @@ import android.view.MenuItem;
 import android.view.View;
 
 import butterknife.BindView;
+import android.util.Log;
+
+import twitter4j.FilterQuery;
+import twitter4j.StallWarning;
+import twitter4j.Status;
+import twitter4j.StatusDeletionNotice;
+import twitter4j.StatusListener;
+import twitter4j.TwitterStream;
+import twitter4j.TwitterStreamFactory;
+import twitter4j.conf.ConfigurationBuilder;
 
 public class MainActivity extends AppCompatActivity {
+
+    private static final String[] KEY_WORDS = {"earthquake"};
+    private static final double SEARCH_RADIUS = 15;
+
+    private double currentLat = -90, currentLong = 38;
 
     private boolean earthquakeFilter;
     private boolean floodingFilter;
@@ -24,10 +39,58 @@ public class MainActivity extends AppCompatActivity {
     @BindView(R.id.menu_blizzard) MenuItem blizzardMenu;
     @BindView(R.id.menu_landslide) MenuItem landslideMenu;
 
+    private TwitterStream twitterStream;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
+        initTwitterStream();
+    }
+
+    interface TwitterAuth {
+        String CONSUMER_KEY = "1rnXwetkZ2z0K7RHeTmj5iXak";
+        String CONSUMER_SECRET = "6U13PEUn8toF50LBeMhf7TRffIWMmZVRysLzswdwtkXWIUIagM";
+        String ACCESS_TOKEN = "854167713681375232-ruF3NOVDc3EVKZkCMUzGcLWDRMFhljr";
+        String ACCESS_TOKEN_SECRET = "T6RsmfVZ7cj0H5MoLB9At4dfUNhL7OPw8sCTOP9wzUryY";
+    }
+
+    private void initTwitterStream() {
+        ConfigurationBuilder configurationBuilder = new ConfigurationBuilder();
+        configurationBuilder.setOAuthConsumerKey(TwitterAuth.CONSUMER_KEY)
+                .setOAuthConsumerSecret(TwitterAuth.CONSUMER_SECRET)
+                .setOAuthAccessToken(TwitterAuth.ACCESS_TOKEN)
+                .setOAuthAccessTokenSecret(TwitterAuth.ACCESS_TOKEN_SECRET);
+
+        twitterStream = new TwitterStreamFactory(configurationBuilder.build()).getInstance();
+        twitterStream.addListener(new StatusListener() {
+            public void onStatus(Status status) {
+                Log.e("Tweet received: ", status.getText() + " " + status.getGeoLocation().toString());
+            }
+
+            @Override
+            public void onException(Exception ex) {}
+
+            @Override
+            public void onDeletionNotice(StatusDeletionNotice statusDeletionNotice) {}
+
+            @Override
+            public void onTrackLimitationNotice(int numberOfLimitedStatuses) {}
+
+            @Override
+            public void onScrubGeo(long userId, long upToStatusId) {}
+
+            @Override
+            public void onStallWarning(StallWarning warning) {}
+        });
+
+        FilterQuery tweetFilterQuery = new FilterQuery();
+        tweetFilterQuery.track(KEY_WORDS);
+        tweetFilterQuery.locations(
+                new double[]{currentLat - SEARCH_RADIUS, currentLong - SEARCH_RADIUS},
+                new double[]{currentLat + SEARCH_RADIUS, currentLong + SEARCH_RADIUS});
+        tweetFilterQuery.language("en");
+        twitterStream.filter(tweetFilterQuery);
     }
 
     @Override
