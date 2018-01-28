@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto">
+
+    <group android:checkableBehavior="single">
+        <item android:id="@+id/menu_earthquake"
+            android:orderInCategory="1"
+            app:showAsAction="never"
+            android:checkable="true"
+            android:title="@string/earthquake"/>
+        <item android:id="@+id/menu_flooding"
+            android:orderInCategory="2"
+            app:showAsAction="never"
+            android:checkable="true"
+            android:title="@string/flooding"/>
+        <item android:id="@+id/menu_wildfire"
+            android:orderInCategory="3"
+            app:showAsAction="never"
+            android:checkable="true"
+            android:title="@string/wildfire"/>
+        <item android:id="@+id/menu_tornado"
+            android:orderInCategory="4"
+            app:showAsAction="never"
+            android:checkable="true"
+            android:title="@string/tornado"/>
+        <item android:id="@+id/menu_blizzard"
+            android:orderInCategory="5"
+            app:showAsAction="never"
+            android:checkable="true"
+            android:title="@string/blizzard"/>
+        <item android:id="@+id/menu_landslide"
+            android:orderInCategory="6"
+            app:showAsAction="never"
+            android:checkable="true"
+            android:title="@string/landslide"/>
+    </group>
+</menu>

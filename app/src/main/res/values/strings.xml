@@ -1,3 +1,10 @@
 <resources>
     <string name="app_name">EmergencyProj</string>
+    <string name="earthquake">Earthquake</string>
+    <string name="flooding">Flooding</string>
+    <string name="action_settings">Settings</string>
+    <string name="wildfire">Wildfire</string>
+    <string name="tornado">Tornado</string>
+    <string name="blizzard">Blizzard</string>
+    <string name="landslide">Landslide</string>
 </resources>
