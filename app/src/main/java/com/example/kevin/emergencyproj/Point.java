@@ -9,6 +9,8 @@ public class Point {
         String TORNADO = "tornado";
         String BLIZZARD = "blizzard";
         String LANDSLIDE = "landslide";
+
+        String RESPONDER = "responder";
     }
 
     private double latitude;

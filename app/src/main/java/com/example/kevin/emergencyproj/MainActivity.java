@@ -7,7 +7,6 @@ import android.view.MenuItem;
 import android.view.View;
 
 import butterknife.BindView;
-import android.util.Log;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -30,6 +29,7 @@ public class MainActivity extends AppCompatActivity {
 
     List<Point> mockPoints = new ArrayList<>();
     List<Point> disasterPoints = new ArrayList<>();
+    List<Point> responderPoints = new ArrayList<>();
 
     private boolean earthquakeFilter;
     private boolean floodingFilter;
@@ -52,22 +52,26 @@ public class MainActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
         initTwitterStream();
+        initMockPoints();
     }
 
     private void initMockPoints() {
         mockPoints.add(new Point(29.7449, -95.37141, Point.Type.FLOOD));
-        mockPoints.add(new Point(29.76051082, -95.36164326, Point.Type.FLOOD));
-        mockPoints.add(new Point(31.48889, -97.15737, Point.Type.FLOOD));
-        mockPoints.add(new Point(29.8421551, -97.9737673, Point.Type.FLOOD));
-        mockPoints.add(new Point(32.288333339, -97.4166666, Point.Type.FLOOD));
+        mockPoints.add(new Point(29.76051082, -95.36164326, Point.Type.EARTHQUAKE));
+        mockPoints.add(new Point(31.48889, -97.15737, Point.Type.LANDSLIDE));
+        mockPoints.add(new Point(29.8421551, -97.9737673, Point.Type.TORNADO));
+        mockPoints.add(new Point(32.288333339, -97.4166666, Point.Type.WILDFIRE));
         mockPoints.add(new Point(29.7252, -95.344, Point.Type.FLOOD));
-        mockPoints.add(new Point(29.77564674, -95.81264056, Point.Type.FLOOD));
-        mockPoints.add(new Point(29.8421551, -97.9737673, Point.Type.FLOOD));
-        mockPoints.add(new Point(29.7629, -95.3832, Point.Type.FLOOD));
+        mockPoints.add(new Point(29.77564674, -95.81264056, Point.Type.BLIZZARD));
+        mockPoints.add(new Point(29.8421551, -97.9737673, Point.Type.LANDSLIDE));
+        mockPoints.add(new Point(29.7629, -95.3832, Point.Type.WILDFIRE));
         mockPoints.add(new Point(29.775746, -95.80937, Point.Type.FLOOD));
-        mockPoints.add(new Point(29.78216, -95.80981, Point.Type.FLOOD));
-        mockPoints.add(new Point(29.7603773, -95.361569, Point.Type.FLOOD));
+        mockPoints.add(new Point(29.78216, -95.80981, Point.Type.TORNADO));
+        mockPoints.add(new Point(29.7603773, -95.361569, Point.Type.EARTHQUAKE));
         mockPoints.add(new Point(29.75217779, -95.35790357, Point.Type.FLOOD));
+        responderPoints.add(new Point(30, -96, Point.Type.RESPONDER));
+        responderPoints.add(new Point(29.5, -96.5, Point.Type.RESPONDER));
+        responderPoints.add(new Point(30.1, -95.5, Point.Type.RESPONDER));
     }
 
     interface TwitterAuth {
@@ -88,6 +92,7 @@ public class MainActivity extends AppCompatActivity {
         twitterStream.addListener(new StatusListener() {
             public void onStatus(Status status) {
                 if (!mockPoints.isEmpty()) disasterPoints.add(mockPoints.remove(0));
+                //Update markers
             }
 
             @Override
@@ -114,6 +119,17 @@ public class MainActivity extends AppCompatActivity {
         twitterStream.filter(tweetFilterQuery);
     }
 
+    private int urgencyLevel(Point p) {
+        int nearbyResponders = 0;
+        for (Point r : responderPoints) {
+            double dist = Math.sqrt(
+                    Math.pow((r.getLatitude() - p.getLatitude()), 2) +
+                    Math.pow(r.getLongitude() - p.getLongitude(), 2));
+            if (dist <= .5) nearbyResponders++;
+        }
+        return nearbyResponders/2;
+    }
+
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
         getMenuInflater().inflate(R.menu.menu, menu);
@@ -123,6 +139,7 @@ public class MainActivity extends AppCompatActivity {
 
     @Override
     public boolean onOptionsItemSelected(MenuItem item) {
+        //Update markers based on filters
         switch (item.getItemId()) {
             case R.id.menu_earthquake:
                 // earthquake was selected
