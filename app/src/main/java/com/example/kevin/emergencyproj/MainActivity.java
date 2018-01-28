@@ -167,12 +167,11 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
     }
 
     private int urgencyLevel(Point p) {
-        double maxDist = .004;
+        double maxDist = 50;
         int nearbyResponders = 0;
         for (Point r : responderPoints) {
-            double dist = Math.sqrt(
-                    Math.pow((r.getLatitude() - p.getLatitude()), 2) +
-                            Math.pow(r.getLongitude() - p.getLongitude(), 2));
+            double dist = haversine(r.getLatitude(), r.getLongitude(),
+                    p.getLatitude(), p.getLongitude());
             if (dist <= maxDist) nearbyResponders++;
         }
 
@@ -182,13 +181,30 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
             Location loc = locationManager.getLastKnownLocation(LocationManager.GPS_PROVIDER);
             currentLat = loc.getLatitude();
             currentLong = loc.getLongitude();
-            double dist = Math.sqrt(
-                    Math.pow((currentLat - p.getLatitude()), 2) +
-                            Math.pow(currentLong - p.getLongitude(), 2));
+            double dist = haversine(currentLat, currentLong,
+                    p.getLatitude(), p.getLongitude());
             if (dist <= maxDist) nearbyResponders++;
         }
 
-        return nearbyResponders / 1;
+        return nearbyResponders / 2;
+    }
+
+    private double haversine(double lat1, double lng1, double lat2, double lng2) {
+        double R = 6371e3;
+        double a1 = toRad(lat1);
+        double a2 = toRad(lat2);
+        double deltaA = toRad(lat2 - lat1);
+        double deltaLambda = toRad(lng2 - lng1);
+
+        double a = Math.sin(deltaA / 2) * Math.sin (deltaA / 2) +
+                Math.cos(a1) * Math.cos(a2) *
+                        Math.sin(deltaLambda / 2) * Math.sin(deltaLambda / 2);
+        double b = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+        return R * b;
+    }
+
+    private double toRad(double l) {
+        return l * Math.PI / 180;
     }
 
     @Override
@@ -237,7 +253,7 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
             googleMap.setOnCameraMoveListener(new GoogleMap.OnCameraMoveListener() {
                 @Override
                 public void onCameraMove() {
-                    if (isZoomedOut != (googleMap.getCameraPosition().zoom <= 10)) {
+                    if (isZoomedOut != (googleMap.getCameraPosition().zoom <= 12)) {
                         isZoomedOut = !isZoomedOut;
                         zoomedOutMarkers.clear();
                         for (Point p : markerTracker.keySet()) {
