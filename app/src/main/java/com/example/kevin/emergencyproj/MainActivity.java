@@ -27,12 +27,14 @@ import com.google.android.gms.maps.SupportMapFragment;
 import com.google.android.gms.maps.model.BitmapDescriptor;
 import com.google.android.gms.maps.model.BitmapDescriptorFactory;
 import com.google.android.gms.maps.model.LatLng;
+import com.google.android.gms.maps.model.Marker;
 import com.google.android.gms.maps.model.MarkerOptions;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
-import butterknife.BindView;
 import butterknife.ButterKnife;
 import twitter4j.FilterQuery;
 import twitter4j.StallWarning;
@@ -46,13 +48,14 @@ import twitter4j.conf.ConfigurationBuilder;
 public class MainActivity extends AppCompatActivity implements OnMapReadyCallback {
 
     private static final String[] KEY_WORDS = {"earthquake", "flood", "wildfire", "tornado", "blizzard"};
-    private static final double SEARCH_RADIUS = 30;
+    private static final double SEARCH_RADIUS = 2;
 
     private double currentLat = 30.615, currentLong = -96.342;
 
     List<Point> mockPoints = new ArrayList<>();
     List<Point> disasterPoints = new ArrayList<>();
     List<Point> responderPoints = new ArrayList<>();
+    Map<Point, Marker> markerTracker = new HashMap<>();
 
     private boolean earthquakeFilter;
     private boolean floodingFilter;
@@ -128,7 +131,7 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
                     runOnUiThread(new Runnable() {
                         @Override
                         public void run() {
-                            updateMarkers();
+                            redrawMarkers();
                         }
                     });
                 }
@@ -320,22 +323,27 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
                 return false;
             }
         });
-        updateMarkers();
+        redrawMarkers();
         return false;
     }
 
-    private void updateMarkers() {
-        googleMap.clear();
+    private void redrawMarkers() {
         for (Point p : responderPoints) {
-            googleMap.addMarker(new MarkerOptions()
-                    .title("First Responder")
-                    .position(new LatLng(p.getLatitude(), p.getLongitude()))
-                    .icon(BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_AZURE)));
+            if (!markerTracker.containsKey(p)) {
+                markerTracker.put(p,
+                        googleMap.addMarker(new MarkerOptions()
+                        .title("First Responder")
+                        .position(new LatLng(p.getLatitude(), p.getLongitude()))
+                        .icon(BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_AZURE))));
+            } else {
+                markerTracker.get(p).remove();
+                markerTracker.remove(p);
+            }
         }
-        for (int i = 0; i < disasterPoints.size(); i++) {
+        for (Point p : disasterPoints) {
             BitmapDescriptor icon;
             String desc;
-            switch (urgencyLevel(disasterPoints.get(i))) {
+            switch (urgencyLevel(p)) {
                 case 0:
                     icon = BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_RED);
                     desc = "High Priority";
@@ -349,55 +357,46 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
                     desc = "Low Priority";
                     break;
             }
-            switch (disasterPoints.get(i).getType()) {
+            boolean isFiltered;
+            String title;
+            switch (p.getType()) {
                 case Point.Type.EARTHQUAKE:
-                    if (!earthquakeFilter) {
-                        googleMap.addMarker(new MarkerOptions()
-                                .title("Earthquake")
-                                .position(new LatLng(disasterPoints.get(i).getLatitude(), disasterPoints.get(i).getLongitude()))
-                                .icon(icon));
-                    }
+                    isFiltered = earthquakeFilter;
+                    title = "Earthquake";
                     break;
                 case Point.Type.FLOOD:
-                    if (!floodingFilter) {
-                        googleMap.addMarker(new MarkerOptions()
-                                .title("Flooding")
-                                .position(new LatLng(disasterPoints.get(i).getLatitude(), disasterPoints.get(i).getLongitude()))
-                                .icon(icon));
-                    }
+                    isFiltered = floodingFilter;
+                    title = "Flooding";
                     break;
                 case Point.Type.WILDFIRE:
-                    if (!wildfireFilter) {
-                        googleMap.addMarker(new MarkerOptions()
-                                .title("Wildfire")
-                                .position(new LatLng(disasterPoints.get(i).getLatitude(), disasterPoints.get(i).getLongitude()))
-                                .icon(icon));
-                    }
+                    isFiltered = wildfireFilter;
+                    title = "Wildfire";
                     break;
                 case Point.Type.TORNADO:
-                    if (!tornadoFilter) {
-                        googleMap.addMarker(new MarkerOptions()
-                                .title("Tornado")
-                                .position(new LatLng(disasterPoints.get(i).getLatitude(), disasterPoints.get(i).getLongitude()))
-                                .icon(icon));
-                    }
+                    isFiltered = tornadoFilter;
+                    title = "Tornado";
                     break;
                 case Point.Type.BLIZZARD:
-                    if (!blizzardFilter) {
-                        googleMap.addMarker(new MarkerOptions()
-                                .title("Blizzard")
-                                .position(new LatLng(disasterPoints.get(i).getLatitude(), disasterPoints.get(i).getLongitude()))
-                                .icon(icon));
-                    }
+                    isFiltered = blizzardFilter;
+                    title = "Blizzard";
                     break;
                 case Point.Type.LANDSLIDE:
-                    if (!landslideFilter) {
-                        googleMap.addMarker(new MarkerOptions()
-                                .title("Landslide")
-                                .position(new LatLng(disasterPoints.get(i).getLatitude(), disasterPoints.get(i).getLongitude()))
-                                .icon(icon));
-                    }
+                    isFiltered = landslideFilter;
+                    title = "LandSlide";
                     break;
+                default:
+                    isFiltered = false;
+                    title = "";
+            }
+            if (!isFiltered && !markerTracker.containsKey(p)) {
+                googleMap.addMarker(new MarkerOptions()
+                        .title(title)
+                        .snippet(desc)
+                        .position(new LatLng(p.getLatitude(), p.getLongitude()))
+                        .icon(icon));
+            } else if (isFiltered && markerTracker.containsKey(p)) {
+                markerTracker.get(p).remove();
+                markerTracker.remove(p);
             }
         }
     }
