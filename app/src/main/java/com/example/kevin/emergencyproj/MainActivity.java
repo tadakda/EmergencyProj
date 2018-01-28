@@ -36,7 +36,6 @@ import com.google.android.gms.maps.model.MarkerOptions;
 import java.util.ArrayList;
 import java.util.List;
 
-public class MainActivity extends AppCompatActivity implements OnMapReadyCallback {
 import java.util.ArrayList;
 import java.util.List;
 
@@ -49,7 +48,7 @@ import twitter4j.TwitterStream;
 import twitter4j.TwitterStreamFactory;
 import twitter4j.conf.ConfigurationBuilder;
 
-public class MainActivity extends AppCompatActivity {
+public class MainActivity extends AppCompatActivity implements OnMapReadyCallback {
 
     private static final String[] KEY_WORDS = {"earthquake", "flood", "wildfire", "tornado", "blizzard"};
     private static final double SEARCH_RADIUS = 1;
@@ -96,8 +95,6 @@ public class MainActivity extends AppCompatActivity {
     private static final LatLng PERTH = new LatLng(-31.952854, 115.857342);
     private static final LatLng SYDNEY = new LatLng(-33.87365, 151.20689);
 
-    List<Point> points = new ArrayList<>();
-
     private GoogleMap googleMap;
 
     private TwitterStream twitterStream;
@@ -108,6 +105,10 @@ public class MainActivity extends AppCompatActivity {
         setContentView(R.layout.activity_main);
         initTwitterStream();
         initMockPoints();
+        // Get the SupportMapFragment and request notification
+        // when the map is ready to be used.
+        SupportMapFragment mapFragment = (SupportMapFragment) getSupportFragmentManager().findFragmentById(R.id.map);
+        mapFragment.getMapAsync(this);
     }
 
     private void initMockPoints() {
@@ -147,23 +148,28 @@ public class MainActivity extends AppCompatActivity {
         twitterStream.addListener(new StatusListener() {
             public void onStatus(Status status) {
                 if (!mockPoints.isEmpty()) disasterPoints.add(mockPoints.remove(0));
-                //Update markers
+                updateMarkers();
             }
 
             @Override
-            public void onException(Exception ex) {}
+            public void onException(Exception ex) {
+            }
 
             @Override
-            public void onDeletionNotice(StatusDeletionNotice statusDeletionNotice) {}
+            public void onDeletionNotice(StatusDeletionNotice statusDeletionNotice) {
+            }
 
             @Override
-            public void onTrackLimitationNotice(int numberOfLimitedStatuses) {}
+            public void onTrackLimitationNotice(int numberOfLimitedStatuses) {
+            }
 
             @Override
-            public void onScrubGeo(long userId, long upToStatusId) {}
+            public void onScrubGeo(long userId, long upToStatusId) {
+            }
 
             @Override
-            public void onStallWarning(StallWarning warning) {}
+            public void onStallWarning(StallWarning warning) {
+            }
         });
 
         FilterQuery tweetFilterQuery = new FilterQuery();
@@ -179,14 +185,10 @@ public class MainActivity extends AppCompatActivity {
         for (Point r : responderPoints) {
             double dist = Math.sqrt(
                     Math.pow((r.getLatitude() - p.getLatitude()), 2) +
-                    Math.pow(r.getLongitude() - p.getLongitude(), 2));
-            if (dist <= .5) nearbyResponders++;
+                            Math.pow(r.getLongitude() - p.getLongitude(), 2));
+            if (dist <= .4) nearbyResponders++;
         }
-        return nearbyResponders/2;
-        // Get the SupportMapFragment and request notification
-        // when the map is ready to be used.
-        SupportMapFragment mapFragment = (SupportMapFragment) getSupportFragmentManager().findFragmentById(R.id.map);
-        mapFragment.getMapAsync(this);
+        return nearbyResponders / 2;
     }
 
     @Override
@@ -217,55 +219,17 @@ public class MainActivity extends AppCompatActivity {
                 // result of the request.
             }
         } else {
-
-            points.add(new Point(-31.952854, 115.857342, "earthquake"));
-            points.add(new Point(-33.87365, 151.20689, "flood"));
-
-            for (int i = 0; i < points.size(); i++) {
-                BitmapDescriptor icon;
-                switch (points.get(i).getType()) {
-                    case "earthquake":
-                        googleMap.addMarker(new MarkerOptions()
-                                .position(new LatLng(points.get(i).getLatitude(), points.get(i).getLongitude()))
-                                .icon(BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_AZURE)));
-                        break;
-                    case "flood":
-                        googleMap.addMarker(new MarkerOptions()
-                                .position(new LatLng(points.get(i).getLatitude(), points.get(i).getLongitude()))
-                                .icon(BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_AZURE)));
-                        break;
-                    case "wildfire":
-                        googleMap.addMarker(new MarkerOptions()
-                                .position(new LatLng(points.get(i).getLatitude(), points.get(i).getLongitude()))
-                                .icon(BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_AZURE)));
-                        break;
-                    case "tornado":
-                        googleMap.addMarker(new MarkerOptions()
-                                .position(new LatLng(points.get(i).getLatitude(), points.get(i).getLongitude()))
-                                .icon(BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_AZURE)));
-                        break;
-                    case "blizzard":
-                        googleMap.addMarker(new MarkerOptions()
-                                .position(new LatLng(points.get(i).getLatitude(), points.get(i).getLongitude()))
-                                .icon(BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_AZURE)));
-                        break;
-                    case "landslide":
-                        googleMap.addMarker(new MarkerOptions()
-                                .position(new LatLng(points.get(i).getLatitude(), points.get(i).getLongitude()))
-                                .icon(BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_AZURE)));
-                        break;
-                }
-            }
-
             LocationManager lm = (LocationManager) getSystemService(Context.LOCATION_SERVICE);
             Location location = lm.getLastKnownLocation(LocationManager.GPS_PROVIDER);
 
             // and move the map's camera to the same location.
             LatLng userLoc = new LatLng(location.getLatitude(), location.getLongitude());
 
+            currentLat = location.getLatitude();
+            currentLong = location.getLongitude();
+
             googleMap.addMarker(new MarkerOptions().position(userLoc).title("Your Marker"));
             googleMap.moveCamera(CameraUpdateFactory.newLatLng(userLoc));
-
         }
     }
 
@@ -384,6 +348,55 @@ public class MainActivity extends AppCompatActivity {
             }
         });
         return false;
+    }
+
+    public void updateMarkers() {
+        for (int i = 0; i < disasterPoints.size(); i++) {
+            BitmapDescriptor icon;
+            switch (urgencyLevel(disasterPoints.get(i))) {
+                case 0:
+                    icon = BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_RED);
+                    break;
+                case 1:
+                    icon = BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_YELLOW);
+                    break;
+                default:
+                    icon = BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_GREEN);
+                    break;
+            }
+            switch (disasterPoints.get(i).getType()) {
+                case Point.Type.EARTHQUAKE:
+                    googleMap.addMarker(new MarkerOptions()
+                            .position(new LatLng(disasterPoints.get(i).getLatitude(), disasterPoints.get(i).getLongitude()))
+                            .icon(icon));
+                    break;
+                case Point.Type.FLOOD:
+                    googleMap.addMarker(new MarkerOptions()
+                            .position(new LatLng(disasterPoints.get(i).getLatitude(), disasterPoints.get(i).getLongitude()))
+                            .icon(icon));
+                    break;
+                case Point.Type.WILDFIRE:
+                    googleMap.addMarker(new MarkerOptions()
+                            .position(new LatLng(disasterPoints.get(i).getLatitude(), disasterPoints.get(i).getLongitude()))
+                            .icon(icon));
+                    break;
+                case Point.Type.TORNADO:
+                    googleMap.addMarker(new MarkerOptions()
+                            .position(new LatLng(disasterPoints.get(i).getLatitude(), disasterPoints.get(i).getLongitude()))
+                            .icon(icon));
+                    break;
+                case Point.Type.BLIZZARD:
+                    googleMap.addMarker(new MarkerOptions()
+                            .position(new LatLng(disasterPoints.get(i).getLatitude(), disasterPoints.get(i).getLongitude()))
+                            .icon(icon));
+                    break;
+                case Point.Type.LANDSLIDE:
+                    googleMap.addMarker(new MarkerOptions()
+                            .position(new LatLng(disasterPoints.get(i).getLatitude(), disasterPoints.get(i).getLongitude()))
+                            .icon(icon));
+                    break;
+            }
+        }
     }
 
     private boolean isChecked = false;
