@@ -1,6 +1,5 @@
 package com.example.kevin.emergencyproj;
 
-import android.*;
 import android.Manifest;
 import android.content.Context;
 import android.content.pm.PackageManager;
@@ -13,15 +12,13 @@ import android.graphics.drawable.VectorDrawable;
 import android.location.Location;
 import android.location.LocationManager;
 import android.os.Build;
+import android.os.Bundle;
 import android.support.v4.app.ActivityCompat;
 import android.support.v4.content.ContextCompat;
 import android.support.v7.app.AppCompatActivity;
-import android.os.Bundle;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
-
-import butterknife.BindView;
 
 import com.google.android.gms.maps.CameraUpdateFactory;
 import com.google.android.gms.maps.GoogleMap;
@@ -30,15 +27,12 @@ import com.google.android.gms.maps.SupportMapFragment;
 import com.google.android.gms.maps.model.BitmapDescriptor;
 import com.google.android.gms.maps.model.BitmapDescriptorFactory;
 import com.google.android.gms.maps.model.LatLng;
-import com.google.android.gms.maps.model.Marker;
 import com.google.android.gms.maps.model.MarkerOptions;
 
 import java.util.ArrayList;
 import java.util.List;
 
-import java.util.ArrayList;
-import java.util.List;
-
+import butterknife.BindView;
 import twitter4j.FilterQuery;
 import twitter4j.StallWarning;
 import twitter4j.Status;
@@ -66,38 +60,17 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
     private boolean blizzardFilter;
     private boolean landslideFilter;
 
-    @BindView(R.id.menu_earthquake)
-    MenuItem earthquakeMenu;
-    @BindView(R.id.menu_flooding)
-    MenuItem floodingMenu;
-    @BindView(R.id.menu_wildfire)
-    MenuItem wildfireMenu;
-    @BindView(R.id.menu_tornado)
-    MenuItem tornadoMenu;
-    @BindView(R.id.menu_blizzard)
-    MenuItem blizzardMenu;
-    @BindView(R.id.menu_landslide)
-    MenuItem landslideMenu;
+    @BindView(R.id.menu_earthquake) MenuItem earthquakeMenu;
+    @BindView(R.id.menu_flooding) MenuItem floodingMenu;
+    @BindView(R.id.menu_wildfire) MenuItem wildfireMenu;
+    @BindView(R.id.menu_tornado) MenuItem tornadoMenu;
+    @BindView(R.id.menu_blizzard) MenuItem blizzardMenu;
+    @BindView(R.id.menu_landslide) MenuItem landslideMenu;
 
     private final int MY_PERMISSIONS_REQUEST_FINE_LOCATION = 1;
 
-    /*
-        CATEGORIES:
-            - BLIZZARD
-            - EARTHQUAKE
-            - WILDFIRE
-            - FLOOD
-            - TORNADO
-            - LANDSLIDE
-     */
-
-    // TEST DATA
-    private static final LatLng PERTH = new LatLng(-31.952854, 115.857342);
-    private static final LatLng SYDNEY = new LatLng(-33.87365, 151.20689);
-
     private GoogleMap googleMap;
-
-    private TwitterStream twitterStream;
+    private LocationManager locationManager;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -105,8 +78,7 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
         setContentView(R.layout.activity_main);
         initTwitterStream();
         initMockPoints();
-        // Get the SupportMapFragment and request notification
-        // when the map is ready to be used.
+
         SupportMapFragment mapFragment = (SupportMapFragment) getSupportFragmentManager().findFragmentById(R.id.map);
         mapFragment.getMapAsync(this);
     }
@@ -144,7 +116,7 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
                 .setOAuthAccessToken(TwitterAuth.ACCESS_TOKEN)
                 .setOAuthAccessTokenSecret(TwitterAuth.ACCESS_TOKEN_SECRET);
 
-        twitterStream = new TwitterStreamFactory(configurationBuilder.build()).getInstance();
+        TwitterStream twitterStream = new TwitterStreamFactory(configurationBuilder.build()).getInstance();
         twitterStream.addListener(new StatusListener() {
             public void onStatus(Status status) {
                 if (!mockPoints.isEmpty()) disasterPoints.add(mockPoints.remove(0));
@@ -188,41 +160,38 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
                             Math.pow(r.getLongitude() - p.getLongitude(), 2));
             if (dist <= .4) nearbyResponders++;
         }
+
+        if (ContextCompat.checkSelfPermission(this,
+                android.Manifest.permission.ACCESS_FINE_LOCATION)
+                == PackageManager.PERMISSION_GRANTED) {
+            Location loc = locationManager.getLastKnownLocation(LocationManager.GPS_PROVIDER);
+            currentLat = loc.getLatitude();
+            currentLong = loc.getLongitude();
+            double dist = Math.sqrt(
+                    Math.pow((currentLat - p.getLatitude()), 2) +
+                            Math.pow(currentLong - p.getLongitude(), 2));
+            if (dist <= .4) nearbyResponders++;
+        }
+
         return nearbyResponders / 2;
     }
 
     @Override
     public void onMapReady(GoogleMap googleMap) {
         this.googleMap = googleMap;
-        // Here, thisActivity is the current activity
         if (ContextCompat.checkSelfPermission(this,
                 android.Manifest.permission.ACCESS_FINE_LOCATION)
                 != PackageManager.PERMISSION_GRANTED) {
 
-            // Should we show an explanation?
             if (ActivityCompat.shouldShowRequestPermissionRationale(this,
                     Manifest.permission.ACCESS_FINE_LOCATION)) {
-
-                // Show an explanation to the user *asynchronously* -- don't block
-                // this thread waiting for the user's response! After the user
-                // sees the explanation, try again to request the permission.
-
             } else {
-
-                // No explanation needed, we can request the permission.
-
                 ActivityCompat.requestPermissions(this,
                         new String[]{Manifest.permission.ACCESS_FINE_LOCATION}, MY_PERMISSIONS_REQUEST_FINE_LOCATION);
-
-                // MY_PERMISSIONS_REQUEST_FINE_LOCATION is an
-                // app-defined int constant. The callback method gets the
-                // result of the request.
             }
         } else {
-            LocationManager lm = (LocationManager) getSystemService(Context.LOCATION_SERVICE);
-            Location location = lm.getLastKnownLocation(LocationManager.GPS_PROVIDER);
-
-            // and move the map's camera to the same location.
+            locationManager = (LocationManager) getSystemService(Context.LOCATION_SERVICE);
+            Location location = locationManager.getLastKnownLocation(LocationManager.GPS_PROVIDER);
             LatLng userLoc = new LatLng(location.getLatitude(), location.getLongitude());
 
             currentLat = location.getLatitude();
@@ -238,35 +207,21 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
                                            String permissions[], int[] grantResults) {
         switch (requestCode) {
             case MY_PERMISSIONS_REQUEST_FINE_LOCATION: {
-                // If request is cancelled, the result arrays are empty.
                 if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
                     if (Build.VERSION.SDK_INT >= 23 &&
                             ContextCompat.checkSelfPermission(this, android.Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
                         return;
                     }
 
-                    LocationManager lm = (LocationManager) getSystemService(Context.LOCATION_SERVICE);
-                    Location location = lm.getLastKnownLocation(LocationManager.GPS_PROVIDER);
+                    locationManager = (LocationManager) getSystemService(Context.LOCATION_SERVICE);
+                    Location location = locationManager.getLastKnownLocation(LocationManager.GPS_PROVIDER);
 
-                    // and move the map's camera to the same location.
                     LatLng collegeStation = new LatLng(location.getLatitude(), location.getLongitude());
 
                     googleMap.addMarker(new MarkerOptions().position(collegeStation).title("Your Marker"));
                     googleMap.moveCamera(CameraUpdateFactory.newLatLng(collegeStation));
-
-                    // permission was granted, yay! Do the
-                    // contacts-related task you need to do.
-
-                } else {
-
-                    // permission denied, boo! Disable the
-                    // functionality that depends on this permission.
                 }
-                return;
             }
-
-            // other 'case' lines to check for other
-            // permissions this app might request.
         }
     }
 
@@ -293,43 +248,42 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
         getMenuInflater().inflate(R.menu.menu, menu);
+        earthquakeMenu.setChecked(!earthquakeFilter);
+        floodingMenu.setChecked(!floodingFilter);
+        wildfireMenu.setChecked(!wildfireFilter);
+        tornadoMenu.setChecked(!tornadoFilter);
+        blizzardMenu.setChecked(!blizzardFilter);
+        landslideMenu.setChecked(!landslideFilter);
         return true;
     }
 
 
     @Override
     public boolean onOptionsItemSelected(MenuItem item) {
-        //Update markers based on filters
         switch (item.getItemId()) {
             case R.id.menu_earthquake:
-                // earthquake was selected
                 item.setChecked(!item.isChecked());
-                earthquakeFilter = item.isChecked();
+                earthquakeFilter = !item.isChecked();
                 break;
             case R.id.menu_flooding:
-                // flooding was selected
                 item.setChecked(!item.isChecked());
-                floodingFilter = item.isChecked();
+                floodingFilter = !item.isChecked();
                 break;
             case R.id.menu_wildfire:
-                // wildfire was selected
                 item.setChecked(!item.isChecked());
-                wildfireFilter = item.isChecked();
+                wildfireFilter = !item.isChecked();
                 break;
             case R.id.menu_tornado:
-                // tornado was selected
                 item.setChecked(!item.isChecked());
-                tornadoFilter = item.isChecked();
+                tornadoFilter = !item.isChecked();
                 break;
             case R.id.menu_blizzard:
-                // blizzard was selected
                 item.setChecked(!item.isChecked());
-                blizzardFilter = item.isChecked();
+                blizzardFilter = !item.isChecked();
                 break;
             case R.id.menu_landslide:
-                // landslide was selected
                 item.setChecked(!item.isChecked());
-                landslideFilter = item.isChecked();
+                landslideFilter = !item.isChecked();
                 break;
             default:
                 return super.onOptionsItemSelected(item);
@@ -347,10 +301,12 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
                 return false;
             }
         });
+        updateMarkers();
         return false;
     }
 
-    public void updateMarkers() {
+    private void updateMarkers() {
+        googleMap.clear();
         for (int i = 0; i < disasterPoints.size(); i++) {
             BitmapDescriptor icon;
             switch (urgencyLevel(disasterPoints.get(i))) {
@@ -366,68 +322,54 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
             }
             switch (disasterPoints.get(i).getType()) {
                 case Point.Type.EARTHQUAKE:
-                    googleMap.addMarker(new MarkerOptions()
-                            .position(new LatLng(disasterPoints.get(i).getLatitude(), disasterPoints.get(i).getLongitude()))
-                            .icon(icon));
+                    if (!landslideFilter) {
+                        googleMap.addMarker(new MarkerOptions()
+                                .title("Earthquake")
+                                .position(new LatLng(disasterPoints.get(i).getLatitude(), disasterPoints.get(i).getLongitude()))
+                                .icon(icon));
+                    }
                     break;
                 case Point.Type.FLOOD:
-                    googleMap.addMarker(new MarkerOptions()
-                            .position(new LatLng(disasterPoints.get(i).getLatitude(), disasterPoints.get(i).getLongitude()))
-                            .icon(icon));
+                    if (!floodingFilter) {
+                        googleMap.addMarker(new MarkerOptions()
+                                .title("Flooding")
+                                .position(new LatLng(disasterPoints.get(i).getLatitude(), disasterPoints.get(i).getLongitude()))
+                                .icon(icon));
+                    }
                     break;
                 case Point.Type.WILDFIRE:
-                    googleMap.addMarker(new MarkerOptions()
-                            .position(new LatLng(disasterPoints.get(i).getLatitude(), disasterPoints.get(i).getLongitude()))
-                            .icon(icon));
+                    if (!wildfireFilter) {
+                        googleMap.addMarker(new MarkerOptions()
+                                .title("Wildfire")
+                                .position(new LatLng(disasterPoints.get(i).getLatitude(), disasterPoints.get(i).getLongitude()))
+                                .icon(icon));
+                    }
                     break;
                 case Point.Type.TORNADO:
-                    googleMap.addMarker(new MarkerOptions()
-                            .position(new LatLng(disasterPoints.get(i).getLatitude(), disasterPoints.get(i).getLongitude()))
-                            .icon(icon));
+                    if (!tornadoFilter) {
+                        googleMap.addMarker(new MarkerOptions()
+                                .title("Tornado")
+                                .position(new LatLng(disasterPoints.get(i).getLatitude(), disasterPoints.get(i).getLongitude()))
+                                .icon(icon));
+                    }
                     break;
                 case Point.Type.BLIZZARD:
-                    googleMap.addMarker(new MarkerOptions()
-                            .position(new LatLng(disasterPoints.get(i).getLatitude(), disasterPoints.get(i).getLongitude()))
-                            .icon(icon));
+                    if (!blizzardFilter) {
+                        googleMap.addMarker(new MarkerOptions()
+                                .title("Blizzard")
+                                .position(new LatLng(disasterPoints.get(i).getLatitude(), disasterPoints.get(i).getLongitude()))
+                                .icon(icon));
+                    }
                     break;
                 case Point.Type.LANDSLIDE:
-                    googleMap.addMarker(new MarkerOptions()
-                            .position(new LatLng(disasterPoints.get(i).getLatitude(), disasterPoints.get(i).getLongitude()))
-                            .icon(icon));
+                    if (!landslideFilter) {
+                        googleMap.addMarker(new MarkerOptions()
+                                .title("Landslide")
+                                .position(new LatLng(disasterPoints.get(i).getLatitude(), disasterPoints.get(i).getLongitude()))
+                                .icon(icon));
+                    }
                     break;
             }
         }
-    }
-
-    private boolean isChecked = false;
-
-    public boolean onEarthquake(Menu menu) {
-        earthquakeMenu.setChecked(isChecked);
-        return true;
-    }
-
-    public boolean onFlooding(Menu menu) {
-        floodingMenu.setChecked(isChecked);
-        return true;
-    }
-
-    public boolean onWildfire(Menu menu) {
-        wildfireMenu.setChecked(isChecked);
-        return true;
-    }
-
-    public boolean onTornado(Menu menu) {
-        tornadoMenu.setChecked(isChecked);
-        return true;
-    }
-
-    public boolean onBlizzard(Menu menu) {
-        blizzardMenu.setChecked(isChecked);
-        return true;
-    }
-
-    public boolean onLandslide(Menu menu) {
-        landslideMenu.setChecked(isChecked);
-        return true;
     }
 }
