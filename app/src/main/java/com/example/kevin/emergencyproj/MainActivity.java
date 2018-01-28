@@ -86,22 +86,24 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
     }
 
     private void initMockPoints() {
-        mockPoints.add(new Point(29.7449, -95.37141, Point.Type.FLOOD));
-        mockPoints.add(new Point(29.76051082, -95.36164326, Point.Type.EARTHQUAKE));
-        mockPoints.add(new Point(31.48889, -97.15737, Point.Type.LANDSLIDE));
-        mockPoints.add(new Point(29.8421551, -97.9737673, Point.Type.TORNADO));
-        mockPoints.add(new Point(32.288333339, -97.4166666, Point.Type.WILDFIRE));
-        mockPoints.add(new Point(29.7252, -95.344, Point.Type.FLOOD));
-        mockPoints.add(new Point(29.77564674, -95.81264056, Point.Type.BLIZZARD));
-        mockPoints.add(new Point(29.8421551, -97.9737673, Point.Type.LANDSLIDE));
-        mockPoints.add(new Point(29.7629, -95.3832, Point.Type.WILDFIRE));
-        mockPoints.add(new Point(29.775746, -95.80937, Point.Type.FLOOD));
-        mockPoints.add(new Point(29.78216, -95.80981, Point.Type.TORNADO));
-        mockPoints.add(new Point(29.7603773, -95.361569, Point.Type.EARTHQUAKE));
-        mockPoints.add(new Point(29.75217779, -95.35790357, Point.Type.FLOOD));
-        responderPoints.add(new Point(30, -96, Point.Type.RESPONDER));
-        responderPoints.add(new Point(29.5, -96.5, Point.Type.RESPONDER));
-        responderPoints.add(new Point(30.1, -95.5, Point.Type.RESPONDER));
+        double centerLat = 30.615;
+        double centerLng = -96.342;
+        mockPoints.add(new Point(centerLat - .005 + Math.random() / 100,centerLng - .005 + Math.random() / 100, Point.Type.FLOOD));
+        mockPoints.add(new Point(centerLat - .005 + Math.random() / 100,centerLng - .005 + Math.random() / 100, Point.Type.EARTHQUAKE));
+        mockPoints.add(new Point(centerLat - .005 + Math.random() / 100,centerLng - .005 + Math.random() / 100, Point.Type.LANDSLIDE));
+        mockPoints.add(new Point(centerLat - .005 + Math.random() / 100,centerLng - .005 + Math.random() / 100, Point.Type.TORNADO));
+        mockPoints.add(new Point(centerLat - .005 + Math.random() / 100,centerLng - .005 + Math.random() / 100, Point.Type.WILDFIRE));
+        mockPoints.add(new Point(centerLat - .005 + Math.random() / 100,centerLng - .005 + Math.random() / 100, Point.Type.FLOOD));
+        mockPoints.add(new Point(centerLat - .005 + Math.random() / 100,centerLng - .005 + Math.random() / 100, Point.Type.BLIZZARD));
+        mockPoints.add(new Point(centerLat - .005 + Math.random() / 100,centerLng - .005 + Math.random() / 100, Point.Type.LANDSLIDE));
+        mockPoints.add(new Point(centerLat - .005 + Math.random() / 100,centerLng - .005 + Math.random() / 100, Point.Type.WILDFIRE));
+        mockPoints.add(new Point(centerLat - .005 + Math.random() / 100,centerLng - .005 + Math.random() / 100, Point.Type.FLOOD));
+        mockPoints.add(new Point(centerLat - .005 + Math.random() / 100,centerLng - .005 + Math.random() / 100, Point.Type.TORNADO));
+        mockPoints.add(new Point(centerLat - .005 + Math.random() / 100,centerLng - .005 + Math.random() / 100, Point.Type.EARTHQUAKE));
+        mockPoints.add(new Point(centerLat - .005 + Math.random() / 100,centerLng - .005 + Math.random() / 100, Point.Type.FLOOD));
+        responderPoints.add(new Point(centerLat - .005 + Math.random() / 100,centerLng - .005 + Math.random() / 100, Point.Type.RESPONDER));
+        responderPoints.add(new Point(centerLat - .005 + Math.random() / 100,centerLng - .005 + Math.random() / 100, Point.Type.RESPONDER));
+        responderPoints.add(new Point(centerLat - .005 + Math.random() / 100,centerLng - .005 + Math.random() / 100, Point.Type.RESPONDER));
     }
 
     interface TwitterAuth {
@@ -121,8 +123,15 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
         TwitterStream twitterStream = new TwitterStreamFactory(configurationBuilder.build()).getInstance();
         twitterStream.addListener(new StatusListener() {
             public void onStatus(Status status) {
-                if (!mockPoints.isEmpty()) disasterPoints.add(mockPoints.remove(0));
-                updateMarkers();
+                if (!mockPoints.isEmpty()) {
+                    disasterPoints.add(mockPoints.remove(0));
+                    runOnUiThread(new Runnable() {
+                        @Override
+                        public void run() {
+                            updateMarkers();
+                        }
+                    });
+                }
             }
 
             @Override
@@ -155,12 +164,13 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
     }
 
     private int urgencyLevel(Point p) {
+        double maxDist = .007;
         int nearbyResponders = 0;
         for (Point r : responderPoints) {
             double dist = Math.sqrt(
                     Math.pow((r.getLatitude() - p.getLatitude()), 2) +
                             Math.pow(r.getLongitude() - p.getLongitude(), 2));
-            if (dist <= .4) nearbyResponders++;
+            if (dist <= maxDist) nearbyResponders++;
         }
 
         if (ContextCompat.checkSelfPermission(this,
@@ -172,7 +182,7 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
             double dist = Math.sqrt(
                     Math.pow((currentLat - p.getLatitude()), 2) +
                             Math.pow(currentLong - p.getLongitude(), 2));
-            if (dist <= .4) nearbyResponders++;
+            if (dist <= maxDist) nearbyResponders++;
         }
 
         return nearbyResponders / 2;
@@ -316,22 +326,32 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
 
     private void updateMarkers() {
         googleMap.clear();
+        for (Point p : responderPoints) {
+            googleMap.addMarker(new MarkerOptions()
+                    .title("First Responder")
+                    .position(new LatLng(p.getLatitude(), p.getLongitude()))
+                    .icon(BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_AZURE)));
+        }
         for (int i = 0; i < disasterPoints.size(); i++) {
             BitmapDescriptor icon;
+            String desc;
             switch (urgencyLevel(disasterPoints.get(i))) {
                 case 0:
                     icon = BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_RED);
+                    desc = "High Priority";
                     break;
                 case 1:
                     icon = BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_YELLOW);
+                    desc = "Medium Priority";
                     break;
                 default:
                     icon = BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_GREEN);
+                    desc = "Low Priority";
                     break;
             }
             switch (disasterPoints.get(i).getType()) {
                 case Point.Type.EARTHQUAKE:
-                    if (!landslideFilter) {
+                    if (!earthquakeFilter) {
                         googleMap.addMarker(new MarkerOptions()
                                 .title("Earthquake")
                                 .position(new LatLng(disasterPoints.get(i).getLatitude(), disasterPoints.get(i).getLongitude()))
