@@ -33,6 +33,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import butterknife.BindView;
+import butterknife.ButterKnife;
 import twitter4j.FilterQuery;
 import twitter4j.StallWarning;
 import twitter4j.Status;
@@ -60,12 +61,12 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
     private boolean blizzardFilter;
     private boolean landslideFilter;
 
-    @BindView(R.id.menu_earthquake) MenuItem earthquakeMenu;
-    @BindView(R.id.menu_flooding) MenuItem floodingMenu;
-    @BindView(R.id.menu_wildfire) MenuItem wildfireMenu;
-    @BindView(R.id.menu_tornado) MenuItem tornadoMenu;
-    @BindView(R.id.menu_blizzard) MenuItem blizzardMenu;
-    @BindView(R.id.menu_landslide) MenuItem landslideMenu;
+    MenuItem earthquakeMenu;
+    MenuItem floodingMenu;
+    MenuItem wildfireMenu;
+    MenuItem tornadoMenu;
+    MenuItem blizzardMenu;
+    MenuItem landslideMenu;
 
     private final int MY_PERMISSIONS_REQUEST_FINE_LOCATION = 1;
 
@@ -76,6 +77,7 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
+        ButterKnife.bind(this);
         initTwitterStream();
         initMockPoints();
 
@@ -248,6 +250,13 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
         getMenuInflater().inflate(R.menu.menu, menu);
+        earthquakeMenu = menu.findItem(R.id.menu_earthquake);
+        floodingMenu = menu.findItem(R.id.menu_flooding);
+        wildfireMenu = menu.findItem(R.id.menu_wildfire);
+        tornadoMenu = menu.findItem(R.id.menu_tornado);
+        blizzardMenu = menu.findItem(R.id.menu_blizzard);
+        landslideMenu = menu.findItem(R.id.menu_landslide);
+
         earthquakeMenu.setChecked(!earthquakeFilter);
         floodingMenu.setChecked(!floodingFilter);
         wildfireMenu.setChecked(!wildfireFilter);
