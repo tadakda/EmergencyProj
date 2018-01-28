@@ -1,5 +1,5 @@
 <resources>
-    <string name="app_name">EmergencyProj</string>
+    <string name="app_name">Emergent</string>
     <string name="earthquake">Earthquake</string>
     <string name="flooding">Flooding</string>
     <string name="action_settings">Settings</string>

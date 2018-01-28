@@ -47,8 +47,8 @@ import twitter4j.conf.ConfigurationBuilder;
 
 public class MainActivity extends AppCompatActivity implements OnMapReadyCallback {
 
-    private static final String[] KEY_WORDS = {"earthquake", "flood", "wildfire", "tornado", "blizzard"};
-    private static final double SEARCH_RADIUS = 2;
+    private static final String[] KEY_WORDS = {"earthquake", "flood", "wildfire", "tornado", "blizzard", "landslide"};
+    private static final double SEARCH_RADIUS = 1;
 
     private double currentLat = 30.615, currentLong = -96.342;
 
@@ -91,22 +91,22 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
     private void initMockPoints() {
         double centerLat = 30.615;
         double centerLng = -96.342;
-        mockPoints.add(new Point(centerLat - .005 + Math.random() / 100,centerLng - .005 + Math.random() / 100, Point.Type.FLOOD));
-        mockPoints.add(new Point(centerLat - .005 + Math.random() / 100,centerLng - .005 + Math.random() / 100, Point.Type.EARTHQUAKE));
-        mockPoints.add(new Point(centerLat - .005 + Math.random() / 100,centerLng - .005 + Math.random() / 100, Point.Type.LANDSLIDE));
-        mockPoints.add(new Point(centerLat - .005 + Math.random() / 100,centerLng - .005 + Math.random() / 100, Point.Type.TORNADO));
-        mockPoints.add(new Point(centerLat - .005 + Math.random() / 100,centerLng - .005 + Math.random() / 100, Point.Type.WILDFIRE));
-        mockPoints.add(new Point(centerLat - .005 + Math.random() / 100,centerLng - .005 + Math.random() / 100, Point.Type.FLOOD));
-        mockPoints.add(new Point(centerLat - .005 + Math.random() / 100,centerLng - .005 + Math.random() / 100, Point.Type.BLIZZARD));
-        mockPoints.add(new Point(centerLat - .005 + Math.random() / 100,centerLng - .005 + Math.random() / 100, Point.Type.LANDSLIDE));
-        mockPoints.add(new Point(centerLat - .005 + Math.random() / 100,centerLng - .005 + Math.random() / 100, Point.Type.WILDFIRE));
-        mockPoints.add(new Point(centerLat - .005 + Math.random() / 100,centerLng - .005 + Math.random() / 100, Point.Type.FLOOD));
-        mockPoints.add(new Point(centerLat - .005 + Math.random() / 100,centerLng - .005 + Math.random() / 100, Point.Type.TORNADO));
-        mockPoints.add(new Point(centerLat - .005 + Math.random() / 100,centerLng - .005 + Math.random() / 100, Point.Type.EARTHQUAKE));
-        mockPoints.add(new Point(centerLat - .005 + Math.random() / 100,centerLng - .005 + Math.random() / 100, Point.Type.FLOOD));
-        responderPoints.add(new Point(centerLat - .005 + Math.random() / 100,centerLng - .005 + Math.random() / 100, Point.Type.RESPONDER));
-        responderPoints.add(new Point(centerLat - .005 + Math.random() / 100,centerLng - .005 + Math.random() / 100, Point.Type.RESPONDER));
-        responderPoints.add(new Point(centerLat - .005 + Math.random() / 100,centerLng - .005 + Math.random() / 100, Point.Type.RESPONDER));
+        mockPoints.add(new Point(centerLat - .005 + Math.random() / 100, centerLng - .005 + Math.random() / 100, Point.Type.FLOOD));
+        mockPoints.add(new Point(centerLat - .005 + Math.random() / 100, centerLng - .005 + Math.random() / 100, Point.Type.EARTHQUAKE));
+        mockPoints.add(new Point(centerLat - .005 + Math.random() / 100, centerLng - .005 + Math.random() / 100, Point.Type.LANDSLIDE));
+        mockPoints.add(new Point(centerLat - .005 + Math.random() / 100, centerLng - .005 + Math.random() / 100, Point.Type.TORNADO));
+        mockPoints.add(new Point(centerLat - .005 + Math.random() / 100, centerLng - .005 + Math.random() / 100, Point.Type.WILDFIRE));
+        mockPoints.add(new Point(centerLat - .005 + Math.random() / 100, centerLng - .005 + Math.random() / 100, Point.Type.FLOOD));
+        mockPoints.add(new Point(centerLat - .005 + Math.random() / 100, centerLng - .005 + Math.random() / 100, Point.Type.BLIZZARD));
+        mockPoints.add(new Point(centerLat - .005 + Math.random() / 100, centerLng - .005 + Math.random() / 100, Point.Type.LANDSLIDE));
+        mockPoints.add(new Point(centerLat - .005 + Math.random() / 100, centerLng - .005 + Math.random() / 100, Point.Type.WILDFIRE));
+        mockPoints.add(new Point(centerLat - .005 + Math.random() / 100, centerLng - .005 + Math.random() / 100, Point.Type.FLOOD));
+        mockPoints.add(new Point(centerLat - .005 + Math.random() / 100, centerLng - .005 + Math.random() / 100, Point.Type.TORNADO));
+        mockPoints.add(new Point(centerLat - .005 + Math.random() / 100, centerLng - .005 + Math.random() / 100, Point.Type.EARTHQUAKE));
+        mockPoints.add(new Point(centerLat - .005 + Math.random() / 100, centerLng - .005 + Math.random() / 100, Point.Type.FLOOD));
+        responderPoints.add(new Point(centerLat - .005 + Math.random() / 100, centerLng - .005 + Math.random() / 100, Point.Type.RESPONDER));
+        responderPoints.add(new Point(centerLat - .005 + Math.random() / 100, centerLng - .005 + Math.random() / 100, Point.Type.RESPONDER));
+        responderPoints.add(new Point(centerLat - .005 + Math.random() / 100, centerLng - .005 + Math.random() / 100, Point.Type.RESPONDER));
     }
 
     interface TwitterAuth {
@@ -167,7 +167,7 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
     }
 
     private int urgencyLevel(Point p) {
-        double maxDist = .007;
+        double maxDist = .004;
         int nearbyResponders = 0;
         for (Point r : responderPoints) {
             double dist = Math.sqrt(
@@ -188,7 +188,7 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
             if (dist <= maxDist) nearbyResponders++;
         }
 
-        return nearbyResponders / 2;
+        return nearbyResponders / 1;
     }
 
     @Override
@@ -212,8 +212,9 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
             currentLat = location.getLatitude();
             currentLong = location.getLongitude();
 
-            googleMap.addMarker(new MarkerOptions().position(userLoc).title("Your Marker"));
+            googleMap.addMarker(new MarkerOptions().position(userLoc).title("Your Marker").icon(BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_BLUE)));
             googleMap.moveCamera(CameraUpdateFactory.newLatLng(userLoc));
+            googleMap.animateCamera(CameraUpdateFactory.zoomTo(15), 1, null);
         }
     }
 
@@ -332,12 +333,9 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
             if (!markerTracker.containsKey(p)) {
                 markerTracker.put(p,
                         googleMap.addMarker(new MarkerOptions()
-                        .title("First Responder")
-                        .position(new LatLng(p.getLatitude(), p.getLongitude()))
-                        .icon(BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_AZURE))));
-            } else {
-                markerTracker.get(p).remove();
-                markerTracker.remove(p);
+                                .title("First Responder")
+                                .position(new LatLng(p.getLatitude(), p.getLongitude()))
+                                .icon(BitmapDescriptorFactory.fromResource(R.mipmap.responder_icon))));
             }
         }
         for (Point p : disasterPoints) {
@@ -382,18 +380,19 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
                     break;
                 case Point.Type.LANDSLIDE:
                     isFiltered = landslideFilter;
-                    title = "LandSlide";
+                    title = "Landslide";
                     break;
                 default:
                     isFiltered = false;
                     title = "";
             }
             if (!isFiltered && !markerTracker.containsKey(p)) {
-                googleMap.addMarker(new MarkerOptions()
-                        .title(title)
-                        .snippet(desc)
-                        .position(new LatLng(p.getLatitude(), p.getLongitude()))
-                        .icon(icon));
+                markerTracker.put(p,
+                        googleMap.addMarker(new MarkerOptions()
+                                .title(title)
+                                .snippet(desc)
+                                .position(new LatLng(p.getLatitude(), p.getLongitude()))
+                                .icon(icon)));
             } else if (isFiltered && markerTracker.containsKey(p)) {
                 markerTracker.get(p).remove();
                 markerTracker.remove(p);
