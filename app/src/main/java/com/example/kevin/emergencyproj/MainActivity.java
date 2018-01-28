@@ -46,7 +46,7 @@ import twitter4j.conf.ConfigurationBuilder;
 public class MainActivity extends AppCompatActivity implements OnMapReadyCallback {
 
     private static final String[] KEY_WORDS = {"earthquake", "flood", "wildfire", "tornado", "blizzard"};
-    private static final double SEARCH_RADIUS = 1;
+    private static final double SEARCH_RADIUS = 30;
 
     private double currentLat = 30.615, currentLong = -96.342;
 
